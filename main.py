@@ -1,147 +1,324 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from typing import List, Optional
-import torch
-import numpy as np
-import re
-import string
-from models import model
-from sklearn.preprocessing import MultiLabelBinarizer
-import faiss
-import pandas as pd
+import uvicorn
+import logging
+import os
+from contextlib import asynccontextmanager
 
-router = APIRouter()
+from analyze import router as analyze_router
+from compare import router as compare_router
+from timeline import router as timeline_router
+from visualize import router as visualize_router
+from embedding_updater import router as updater_router
 
-REFERENCE_DATA_PATH = "data/reference_embeddings.csv"
-REFERENCE_INDEX_PATH = "data/reference_index.faiss"
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-def load_reference_embeddings():
-    df = pd.read_csv(REFERENCE_DATA_PATH)
-    embeddings = np.stack(df['embedding'].apply(eval).values)
-    return df, embeddings
+app_metadata = {
+    "title": "Adhoc - Political Analysis API",
+    "description": """
+    ## Adhoc Political Machine Learning API
+    
+    A comprehensive API for analyzing political text using advanced machine learning techniques.
+    
+    ### Features:
+    - **Text Analysis**: Extract political ideology, sentiment, and key phrases from text
+    - **Similarity Search**: Find similar political statements using FAISS vector search
+    - **Multi-label Classification**: Classify text across social, economic, and foreign policy dimensions
+    - **Attention Visualization**: See which words are most important for predictions
+    - **Timeline Analysis**: Track ideological drift over time
+    - **Text Comparison**: Compare two texts for ideological similarity
+    - **Clustering**: Group texts by ideological similarity
+    - **Visualization**: Interactive plots of political ideology space
+    - **Database Management**: Add new political statements and update embeddings
+    
+    ### Endpoints:
+    - `/analyze/` - Main analysis endpoint
+    - `/compare/` - Compare two texts
+    - `/timeline/{politician}/trajectory` - Political trajectory over time
+    - `/visualize/` - Various visualization endpoints
+    - `/update/` - Database management endpoints
+    """,
+    "version": "1.0.0",
+    "contact": {
+        "name": "Adhoc Political Analysis",
+        "email": "contact@adhoc-politics.com"
+    }
+}
 
-REFERENCE_DF, REFERENCE_EMBEDDINGS = load_reference_embeddings()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting Adhoc Political Analysis API...")
+    
+    os.makedirs("data", exist_ok=True)
+    os.makedirs("data/backups", exist_ok=True)
+    
+    try:
+        from models import initialize_model
+        initialize_model()
+        logger.info("Models initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing models: {e}")
+    
+    yield
+    
+    logger.info("Shutting down Adhoc Political Analysis API...")
 
-REFERENCE_EMBEDDINGS = REFERENCE_EMBEDDINGS / np.linalg.norm(REFERENCE_EMBEDDINGS, axis=1, keepdims=True)
-INDEX = faiss.IndexFlatIP(REFERENCE_EMBEDDINGS.shape[1])
-INDEX.add(REFERENCE_EMBEDDINGS)
+app = FastAPI(
+    lifespan=lifespan,
+    **app_metadata
+)
 
-class AnalyzeRequest(BaseModel):
-    text: str
-    include_neighbors: Optional[bool] = True
-    top_k: Optional[int] = 5
+# add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class NeighborMatch(BaseModel):
-    politician: str
-    distance: float
-    sample_text: str
-    date: Optional[str]
+# health check models
+class HealthResponse(BaseModel):
+    status: str
+    version: str
+    models_loaded: bool
+    database_status: str
 
-class IdeologyScores(BaseModel):
-    social: str
-    economic: str
-    foreign: str
-    probabilities: List[float]
+class AppInfo(BaseModel):
+    name: str
+    version: str
+    description: str
+    endpoints: dict
+    features: list
 
-class AnalyzeResponse(BaseModel):
-    ideology_vector: List[float]
-    predicted_label: str
-    multi_label_ideology: IdeologyScores
-    explanation_phrases: List[str]
-    neighbors: Optional[List[NeighborMatch]]
+# include routers with prefixes
+app.include_router(
+    analyze_router,
+    prefix="/analyze",
+    tags=["Analysis"],
+    responses={404: {"description": "Not found"}},
+)
 
-def clean_text(text: str) -> str:
-    text = re.sub(r"http\\S+|www\\S+", "", text)
-    text = re.sub(r"[\\r\\n]+", " ", text)
-    text = text.translate(str.maketrans("", "", string.punctuation))
-    return text.strip()
+app.include_router(
+    compare_router,
+    prefix="/compare",
+    tags=["Comparison"],
+    responses={404: {"description": "Not found"}},
+)
 
-def get_token_importance(text: str) -> List[str]:
-    tokens = model.tokenizer.tokenize(text)
-    encoding = model.tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-    with torch.no_grad():
-        outputs = model.encoder(**encoding, output_attentions=True)
-        attentions = outputs.attentions[-1].squeeze(0).mean(dim=0)  # [seq, seq]
-        importance = attentions[0].numpy()
-    ranked = sorted(zip(tokens, importance), key=lambda x: x[1], reverse=True)
-    return [tok for tok, _ in ranked[:5]]
+app.include_router(
+    timeline_router,
+    prefix="/timeline",
+    tags=["Timeline"],
+    responses={404: {"description": "Not found"}},
+)
 
-def softmax(x):
-    e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum()
+app.include_router(
+    visualize_router,
+    prefix="/visualize",
+    tags=["Visualization"],
+    responses={404: {"description": "Not found"}},
+)
 
-def classify_logits(logits: torch.Tensor) -> str:
-    probs = softmax(logits.numpy())
-    labels = ["left", "center", "right"]
-    return labels[np.argmax(probs)]
+app.include_router(
+    updater_router,
+    prefix="/update",
+    tags=["Database Management"],
+    responses={404: {"description": "Not found"}},
+)
 
-def multilabel_classify(vector: np.ndarray) -> IdeologyScores:
-    #will replace with learned axes
-    SOCIAL_AXIS = np.random.normal(size=vector.shape)
-    ECON_AXIS = np.random.normal(size=vector.shape)
-    FOREIGN_AXIS = np.random.normal(size=vector.shape)
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Adhoc Political Analysis API</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
+            .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+            h2 { color: #34495e; margin-top: 30px; }
+            .endpoint { background: #ecf0f1; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #3498db; }
+            .method { background: #3498db; color: white; padding: 5px 10px; border-radius: 3px; font-size: 12px; margin-right: 10px; }
+            .description { margin-top: 10px; color: #7f8c8d; }
+            .feature { background: #e8f5e8; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 4px solid #27ae60; }
+            a { color: #3498db; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .nav { text-align: center; margin: 20px 0; }
+            .nav a { background: #3498db; color: white; padding: 10px 20px; margin: 0 10px; border-radius: 5px; text-decoration: none; }
+            .nav a:hover { background: #2980b9; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🏛️ Adhoc Political Analysis API</h1>
+            
+            <div class="nav">
+                <a href="/docs">📚 API Documentation</a>
+                <a href="/redoc">📖 ReDoc</a>
+                <a href="/health">🏥 Health Check</a>
+            </div>
+            
+            <h2>🎯 Key Features</h2>
+            <div class="feature">🧠 Advanced political ideology classification using transformer models</div>
+            <div class="feature">🔍 Semantic similarity search against politician statements</div>
+            <div class="feature">📊 Multi-dimensional analysis (social, economic, foreign policy)</div>
+            <div class="feature">⚡ Attention-based token importance extraction</div>
+            <div class="feature">📈 Interactive visualizations with UMAP/t-SNE</div>
+            <div class="feature">🔄 Real-time database updates and FAISS indexing</div>
+            
+            <h2>🚀 Main Endpoints</h2>
+            
+            <div class="endpoint">
+                <span class="method">POST</span><strong>/analyze/</strong>
+                <div class="description">
+                    Main analysis endpoint. Analyze political text for ideology, extract key phrases, 
+                    and find similar statements from politicians.
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">POST</span><strong>/compare/</strong>
+                <div class="description">
+                    Compare two political texts for ideological similarity using cosine similarity 
+                    and euclidean distance metrics.
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">GET</span><strong>/timeline/{politician}/trajectory</strong>
+                <div class="description">
+                    Analyze ideological evolution of a politician over time with PCA visualization.
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">POST</span><strong>/visualize/ideology-space</strong>
+                <div class="description">
+                    Create interactive UMAP visualization of political ideology space with your texts 
+                    compared to reference politicians.
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">POST</span><strong>/visualize/cluster-analysis</strong>
+                <div class="description">
+                    Perform clustering analysis on political texts using K-means and visualize 
+                    results with dimensionality reduction.
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method">POST</span><strong>/update/add-statement</strong>
+                <div class="description">
+                    Add new political statements to the database with automatic embedding generation 
+                    and FAISS index updates.
+                </div>
+            </div>
+            
+            <h2>📊 Example Usage</h2>
+            <p>Try analyzing this text: <em>"Healthcare is a fundamental right and we need universal coverage for all Americans"</em></p>
+            
+            <h2>🛠️ Technical Stack</h2>
+            <ul>
+                <li><strong>Backend:</strong> FastAPI, PyTorch, Transformers</li>
+                <li><strong>ML Models:</strong> BERT-based ideology classifier with attention</li>
+                <li><strong>Vector Search:</strong> FAISS for similarity search</li>
+                <li><strong>Visualization:</strong> Plotly, UMAP, t-SNE</li>
+                <li><strong>Data:</strong> Pandas, NumPy, scikit-learn</li>
+            </ul>
+            
+            <div style="text-align: center; margin-top: 30px; color: #7f8c8d;">
+                <p>Built for analyzing political discourse with state-of-the-art NLP</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
-    SOCIAL_AXIS /= np.linalg.norm(SOCIAL_AXIS)
-    ECON_AXIS /= np.linalg.norm(ECON_AXIS)
-    FOREIGN_AXIS /= np.linalg.norm(FOREIGN_AXIS)
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    try:
+        # Check if models are loaded
+        from models import model
+        models_loaded = model is not None
+        
+        # Check database status
+        database_status = "healthy"
+        try:
+            from embedding_updater import updater
+            stats = updater.get_stats()
+            if stats.total_embeddings == 0:
+                database_status = "empty"
+        except Exception as e:
+            database_status = f"error: {str(e)}"
+        
+        return HealthResponse(
+            status="healthy",
+            version=app_metadata["version"],
+            models_loaded=models_loaded,
+            database_status=database_status
+        )
+    except Exception as e:
+        logger.error(f"Health check error: {e}")
+        return HealthResponse(
+            status="unhealthy",
+            version=app_metadata["version"],
+            models_loaded=False,
+            database_status=f"error: {str(e)}"
+        )
 
-    social_score = np.dot(vector, SOCIAL_AXIS)
-    econ_score = np.dot(vector, ECON_AXIS)
-    foreign_score = np.dot(vector, FOREIGN_AXIS)
-
-    def interpret(val, axis):
-        if axis == "social":
-            return "liberal" if val < -0.2 else "conservative" if val > 0.2 else "moderate"
-        elif axis == "economic":
-            return "left" if val < -0.2 else "right" if val > 0.2 else "center"
-        elif axis == "foreign":
-            return "isolationist" if val < -0.2 else "interventionist" if val > 0.2 else "neutral"
-
-    return IdeologyScores(
-        social=interpret(social_score, "social"),
-        economic=interpret(econ_score, "economic"),
-        foreign=interpret(foreign_score, "foreign"),
-        probabilities=[round(float(x), 4) for x in [social_score, econ_score, foreign_score]]
+@app.get("/info", response_model=AppInfo)
+async def app_info():
+    return AppInfo(
+        name="Adhoc Political Analysis API",
+        version=app_metadata["version"],
+        description="Advanced political text analysis using machine learning",
+        endpoints={
+            "analyze": "Comprehensive political text analysis",
+            "compare": "Compare two texts for ideological similarity",
+            "timeline": "Track politician ideology over time",
+            "visualize": "Interactive visualizations and clustering",
+            "update": "Database management and embedding updates"
+        },
+        features=[
+            "Political ideology classification",
+            "Multi-label dimension analysis", 
+            "Attention-based token importance",
+            "FAISS similarity search",
+            "Interactive visualizations",
+            "Real-time database updates",
+            "Clustering analysis",
+            "Timeline tracking"
+        ]
     )
 
-def find_neighbors(vec: np.ndarray, k: int) -> List[dict]:
-    query = vec / np.linalg.norm(vec)
-    dists, idxs = INDEX.search(np.array([query]), k)
-    results = []
-    for i in range(k):
-        row = REFERENCE_DF.iloc[idxs[0][i]]
-        results.append({
-            "politician": row["politician"],
-            "distance": round(float(dists[0][i]), 4),
-            "sample_text": row["text"][:200],
-            "date": row.get("date", "N/A")
-        })
-    return results
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    return {"error": "Endpoint not found", "available_endpoints": [
+        "/docs", "/redoc", "/health", "/info",
+        "/analyze/", "/compare/", "/timeline/", "/visualize/", "/update/"
+    ]}
 
-@router.post("/", response_model=AnalyzeResponse)
-def analyze(payload: AnalyzeRequest):
-    text = payload.text.strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="Empty input.")
+@app.exception_handler(500)
+async def internal_error_handler(request: Request, exc: HTTPException):
+    logger.error(f"Internal server error: {exc}")
+    return {"error": "Internal server error", "message": "Please check the logs"}
 
-    cleaned = clean_text(text)
-    with torch.no_grad():
-        emb, logits = model([cleaned])
-        vec_np = emb[0].detach().numpy()
-        logit = logits[0]
-
-    pred_label = classify_logits(logit)
-    top_phrases = get_token_importance(cleaned)
-    multi_label = multilabel_classify(vec_np)
-
-    result = {
-        "ideology_vector": vec_np.tolist(),
-        "predicted_label": pred_label,
-        "explanation_phrases": top_phrases,
-        "multi_label_ideology": multi_label
-    }
-
-    if payload.include_neighbors:
-        result["neighbors"] = find_neighbors(vec_np, payload.top_k)
-
-    return result
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8001,
+        reload=True,
+        log_level="info"
+    )
