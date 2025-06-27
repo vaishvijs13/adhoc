@@ -86,7 +86,7 @@ const TextComparison: React.FC = () => {
     <div className="text-comparison">
       <div className="card">
         <div className="card-header">
-          <h2>⚖️ Text Comparison</h2>
+          <h2>Text Comparison</h2>
           <p>Compare two political texts for ideological similarity and differences</p>
         </div>
         <div className="card-body">
@@ -124,7 +124,7 @@ const TextComparison: React.FC = () => {
 
           <div className="example-texts">
             <p style={{ marginBottom: '0.5rem', fontWeight: 600, color: '#2c3e50' }}>
-              📝 Try these comparison examples:
+              Try these comparison examples:
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               {examplePairs.map((example, index) => (

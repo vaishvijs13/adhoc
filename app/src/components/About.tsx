@@ -25,111 +25,26 @@ const About: React.FC = () => {
     fetchSystemInfo();
   }, []);
 
-  const features = [
-    {
-      icon: '🧠',
-      title: 'Advanced ML Analysis',
-      description: 'Uses state-of-the-art transformer models (BERT-based) for political text classification with multi-dimensional ideology scoring.',
-    },
-    {
-      icon: '⚖️',
-      title: 'Text Comparison',
-      description: 'Compare two political texts using cosine similarity and euclidean distance metrics with detailed ideological breakdown.',
-    },
-    {
-      icon: '📊',
-      title: 'Interactive Visualizations',
-      description: 'Visualize political texts in ideological space using UMAP, t-SNE, or PCA dimensionality reduction techniques.',
-    },
-    {
-      icon: '👥',
-      title: 'Politician Matching',
-      description: 'Find politicians with similar ideological statements using FAISS-powered vector similarity search.',
-    },
-    {
-      icon: '🎯',
-      title: 'Multi-Label Classification',
-      description: 'Analyze texts across multiple dimensions: social issues, economic policy, and foreign policy.',
-    },
-    {
-      icon: '🔍',
-      title: 'Token Importance',
-      description: 'Identify the most influential words and phrases that drive the political classification.',
-    },
-  ];
-
-  const techStack = [
-    { category: 'Backend', technologies: ['FastAPI', 'PyTorch', 'Transformers', 'FAISS', 'UMAP', 'Scikit-learn'] },
-    { category: 'Frontend', technologies: ['React', 'TypeScript', 'Axios', 'CSS3'] },
-    { category: 'ML Models', technologies: ['BERT', 'Political BERT', 'Custom Classifiers'] },
-    { category: 'Data', technologies: ['Vector Embeddings', 'CSV Storage', 'NLTK'] },
-  ];
-
   return (
     <div className="about">
       <div className="card">
         <div className="card-header">
-          <h2>ℹ️ About Adhoc Political Analysis</h2>
+          <h2>About adhoc</h2>
           <p>Advanced machine learning platform for political text analysis and ideology classification</p>
         </div>
         <div className="card-body">
           <div className="result-item">
-            <h3>🚀 What is Adhoc?</h3>
+            <h3>What is adhoc?</h3>
             <p style={{ lineHeight: 1.6, color: '#5a6c7d' }}>
-              Adhoc is a sophisticated political analysis platform that uses cutting-edge machine learning 
-              techniques to analyze political text and classify ideological positions. Built with FastAPI 
+              adhoc is a sophisticated political analysis platform that uses machine learning to analyze political text and classify ideological positions. Built with FastAPI 
               and PyTorch, it provides real-time analysis of political statements, speeches, and documents 
               across multiple ideological dimensions.
             </p>
           </div>
 
-          <div className="result-item">
-            <h3>✨ Key Features</h3>
-            <div className="ideology-grid">
-              {features.map((feature, index) => (
-                <div key={index} className="ideology-item" style={{ textAlign: 'left' }}>
-                  <h4>
-                    <span style={{ fontSize: '1.5rem', marginRight: '0.5rem' }}>{feature.icon}</span>
-                    {feature.title}
-                  </h4>
-                  <p style={{ color: '#7f8c8d', fontSize: '0.9rem', lineHeight: 1.4 }}>
-                    {feature.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           <div className="result-item">
-            <h3>🛠️ Technology Stack</h3>
-            <div className="ideology-grid">
-              {techStack.map((stack, index) => (
-                <div key={index} className="ideology-item" style={{ textAlign: 'left' }}>
-                  <h4>{stack.category}</h4>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                    {stack.technologies.map((tech, techIndex) => (
-                      <span
-                        key={techIndex}
-                        style={{
-                          background: '#3498db',
-                          color: 'white',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '10px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="result-item">
-            <h3>📈 System Status</h3>
+            <h3>System Status</h3>
             {loading ? (
               <div className="loading">
                 <div className="spinner"></div>
@@ -138,7 +53,7 @@ const About: React.FC = () => {
             ) : (
               <div className="ideology-grid">
                 <div className="ideology-item">
-                  <h4>🏥 Health Status</h4>
+                  <h4>Health Status</h4>
                   <div style={{ textAlign: 'left' }}>
                     <p>
                       <strong>Status:</strong>{' '}
@@ -168,7 +83,7 @@ const About: React.FC = () => {
                 </div>
 
                 <div className="ideology-item">
-                  <h4>💾 Database Stats</h4>
+                  <h4>Database Stats</h4>
                   <div style={{ textAlign: 'left' }}>
                     <p><strong>Total Embeddings:</strong> {dbStats?.total_embeddings || 0}</p>
                     <p><strong>Unique Politicians:</strong> {dbStats?.unique_politicians || 0}</p>
@@ -178,7 +93,7 @@ const About: React.FC = () => {
                 </div>
 
                 <div className="ideology-item">
-                  <h4>🔧 API Endpoints</h4>
+                  <h4>API Endpoints</h4>
                   <div style={{ textAlign: 'left' }}>
                     <p><strong>Base URL:</strong> http://localhost:8001</p>
                     <p><strong>Documentation:</strong> <a href="http://localhost:8001/docs" target="_blank" rel="noopener noreferrer">/docs</a></p>
@@ -188,7 +103,7 @@ const About: React.FC = () => {
                 </div>
 
                 <div className="ideology-item">
-                  <h4>🎯 Model Info</h4>
+                  <h4>Model Info</h4>
                   <div style={{ textAlign: 'left' }}>
                     <p><strong>Primary Model:</strong> Political BERT</p>
                     <p><strong>Embedding Dim:</strong> 256D</p>
@@ -201,7 +116,7 @@ const About: React.FC = () => {
           </div>
 
           <div className="result-item">
-            <h3>🔬 How It Works</h3>
+            <h3>How It Works</h3>
             <div style={{ textAlign: 'left', lineHeight: 1.6, color: '#5a6c7d' }}>
               <ol style={{ paddingLeft: '1.5rem' }}>
                 <li style={{ marginBottom: '0.5rem' }}>
@@ -224,28 +139,28 @@ const About: React.FC = () => {
           </div>
 
           <div className="result-item">
-            <h3>📚 Use Cases</h3>
+            <h3>Use Cases</h3>
             <div className="ideology-grid">
               <div className="ideology-item" style={{ textAlign: 'left' }}>
-                <h4>📰 Media Analysis</h4>
+                <h4>Media Analysis</h4>
                 <p style={{ color: '#7f8c8d', fontSize: '0.9rem' }}>
                   Analyze news articles, editorials, and opinion pieces for political bias and ideological positioning.
                 </p>
               </div>
               <div className="ideology-item" style={{ textAlign: 'left' }}>
-                <h4>🗳️ Campaign Research</h4>
+                <h4>Campaign Research</h4>
                 <p style={{ color: '#7f8c8d', fontSize: '0.9rem' }}>
                   Compare candidate positions, track ideological shifts, and analyze campaign messaging.
                 </p>
               </div>
               <div className="ideology-item" style={{ textAlign: 'left' }}>
-                <h4>🎓 Academic Research</h4>
+                <h4>Academic Research</h4>
                 <p style={{ color: '#7f8c8d', fontSize: '0.9rem' }}>
                   Study political discourse, ideology evolution, and comparative politics across different contexts.
                 </p>
               </div>
               <div className="ideology-item" style={{ textAlign: 'left' }}>
-                <h4>📱 Social Media</h4>
+                <h4>Social Media</h4>
                 <p style={{ color: '#7f8c8d', fontSize: '0.9rem' }}>
                   Analyze political posts, comments, and discussions on social media platforms.
                 </p>

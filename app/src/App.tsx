@@ -21,7 +21,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <div className="header-content">
-          <h1>Adhoc Political Analysis</h1>
+          <h1>adhoc</h1>
           <p>Advanced ML-powered political text analysis and ideology classification</p>
         </div>
       </header>

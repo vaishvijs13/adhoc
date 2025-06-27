@@ -21,9 +21,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app_metadata = {
-    "title": "Adhoc - Political Analysis API",
+    "title": "adhoc - API",
     "description": """
-    ## Adhoc Political Machine Learning API
+    ## adhoc - API
     
     A comprehensive API for analyzing political text using advanced machine learning techniques.
     
@@ -47,8 +47,8 @@ app_metadata = {
     """,
     "version": "1.0.0",
     "contact": {
-        "name": "Adhoc Political Analysis",
-        "email": "contact@adhoc-politics.com"
+        "name": "adhoc",
+        "email": "yooo@adhoc.com" # teehee
     }
 }
 
@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    logger.info("Shutting down Adhoc Political Analysis API...")
+    logger.info("Shutting down adhoc...")
 
 app = FastAPI(
     lifespan=lifespan,
@@ -140,7 +140,7 @@ async def root():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Adhoc Political Analysis API</title>
+        <title>adhoc API</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
             .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -159,23 +159,23 @@ async def root():
     </head>
     <body>
         <div class="container">
-            <h1>🏛️ Adhoc Political Analysis API</h1>
+            <h1>adhoc API</h1>
             
             <div class="nav">
-                <a href="/docs">📚 API Documentation</a>
-                <a href="/redoc">📖 ReDoc</a>
-                <a href="/health">🏥 Health Check</a>
+                <a href="/docs">API Documentation</a>
+                <a href="/redoc">ReDoc</a>
+                <a href="/health">Health Check</a>
             </div>
             
-            <h2>🎯 Key Features</h2>
-            <div class="feature">🧠 Advanced political ideology classification using transformer models</div>
-            <div class="feature">🔍 Semantic similarity search against politician statements</div>
-            <div class="feature">📊 Multi-dimensional analysis (social, economic, foreign policy)</div>
-            <div class="feature">⚡ Attention-based token importance extraction</div>
-            <div class="feature">📈 Interactive visualizations with UMAP/t-SNE</div>
-            <div class="feature">🔄 Real-time database updates and FAISS indexing</div>
+            <h2>Key Features</h2>
+            <div class="feature">Advanced political ideology classification using transformer models</div>
+            <div class="feature">Semantic similarity search against politician statements</div>
+            <div class="feature">Multi-dimensional analysis (social, economic, foreign policy)</div>
+            <div class="feature">Attention-based token importance extraction</div>
+            <div class="feature">Interactive visualizations with UMAP/t-SNE</div>
+            <div class="feature">Real-time database updates and FAISS indexing</div>
             
-            <h2>🚀 Main Endpoints</h2>
+            <h2>Main Endpoints</h2>
             
             <div class="endpoint">
                 <span class="method">POST</span><strong>/analyze/</strong>
@@ -224,13 +224,13 @@ async def root():
                 </div>
             </div>
             
-            <h2>📊 Example Usage</h2>
+            <h2>Example Usage</h2>
             <p>Try analyzing this text: <em>"Healthcare is a fundamental right and we need universal coverage for all Americans"</em></p>
             
             <h2>🛠️ Technical Stack</h2>
             <ul>
                 <li><strong>Backend:</strong> FastAPI, PyTorch, Transformers</li>
-                <li><strong>ML Models:</strong> BERT-based ideology classifier with attention</li>
+                <li><strong>ML:</strong> BERT-based ideology classifier with attention</li>
                 <li><strong>Vector Search:</strong> FAISS for similarity search</li>
                 <li><strong>Visualization:</strong> Plotly, UMAP, t-SNE</li>
                 <li><strong>Data:</strong> Pandas, NumPy, scikit-learn</li>

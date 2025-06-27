@@ -74,7 +74,7 @@ const TextAnalyzer: React.FC = () => {
     <div className="text-analyzer">
       <div className="card">
         <div className="card-header">
-          <h2>🧠 Political Text Analysis</h2>
+          <h2>Political Text Analysis</h2>
           <p>Analyze political text for ideology classification and insights</p>
         </div>
         <div className="card-body">
@@ -95,7 +95,7 @@ const TextAnalyzer: React.FC = () => {
 
           <div className="example-texts">
             <p style={{ marginBottom: '0.5rem', fontWeight: 600, color: '#2c3e50' }}>
-              📝 Try these examples:
+              Try these examples:
             </p>
             <div className="example-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
               {exampleTexts.map((example, index) => (

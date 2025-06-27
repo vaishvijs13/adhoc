@@ -96,7 +96,7 @@ const Visualization: React.FC = () => {
     <div className="visualization">
       <div className="card">
         <div className="card-header">
-          <h2>📊 Political Text Visualization</h2>
+          <h2>Political Text Visualization</h2>
           <p>Visualize political texts in ideological space with advanced analytics</p>
         </div>
         <div className="card-body">
