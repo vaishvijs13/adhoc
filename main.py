@@ -15,8 +15,7 @@ from visualize import router as visualize_router
 from embedding_updater import router as updater_router
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -46,34 +45,31 @@ app_metadata = {
     - `/update/` - Database management endpoints
     """,
     "version": "1.0.0",
-    "contact": {
-        "name": "adhoc",
-        "email": "yooo@adhoc.com" # teehee
-    }
+    "contact": {"name": "adhoc", "email": "yooo@adhoc.com"},  # teehee
 }
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Adhoc Political Analysis API...")
-    
+
     os.makedirs("data", exist_ok=True)
     os.makedirs("data/backups", exist_ok=True)
-    
+
     try:
         from models import initialize_model
+
         initialize_model()
         logger.info("Models initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing models: {e}")
-    
+
     yield
-    
+
     logger.info("Shutting down adhoc...")
 
-app = FastAPI(
-    lifespan=lifespan,
-    **app_metadata
-)
+
+app = FastAPI(lifespan=lifespan, **app_metadata)
 
 # add CORS middleware
 app.add_middleware(
@@ -84,6 +80,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # health check models
 class HealthResponse(BaseModel):
     status: str
@@ -91,12 +88,14 @@ class HealthResponse(BaseModel):
     models_loaded: bool
     database_status: str
 
+
 class AppInfo(BaseModel):
     name: str
     version: str
     description: str
     endpoints: dict
     features: list
+
 
 # include routers with prefixes
 app.include_router(
@@ -133,6 +132,7 @@ app.include_router(
     tags=["Database Management"],
     responses={404: {"description": "Not found"}},
 )
+
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -245,28 +245,31 @@ async def root():
     """
     return HTMLResponse(content=html_content)
 
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     try:
         # Check if models are loaded
         from models import model
+
         models_loaded = model is not None
-        
+
         # Check database status
         database_status = "healthy"
         try:
             from embedding_updater import updater
+
             stats = updater.get_stats()
             if stats.total_embeddings == 0:
                 database_status = "empty"
         except Exception as e:
             database_status = f"error: {str(e)}"
-        
+
         return HealthResponse(
             status="healthy",
             version=app_metadata["version"],
             models_loaded=models_loaded,
-            database_status=database_status
+            database_status=database_status,
         )
     except Exception as e:
         logger.error(f"Health check error: {e}")
@@ -274,8 +277,9 @@ async def health_check():
             status="unhealthy",
             version=app_metadata["version"],
             models_loaded=False,
-            database_status=f"error: {str(e)}"
+            database_status=f"error: {str(e)}",
         )
+
 
 @app.get("/info", response_model=AppInfo)
 async def app_info():
@@ -288,37 +292,44 @@ async def app_info():
             "compare": "Compare two texts for ideological similarity",
             "timeline": "Track politician ideology over time",
             "visualize": "Interactive visualizations and clustering",
-            "update": "Database management and embedding updates"
+            "update": "Database management and embedding updates",
         },
         features=[
             "Political ideology classification",
-            "Multi-label dimension analysis", 
+            "Multi-label dimension analysis",
             "Attention-based token importance",
             "FAISS similarity search",
             "Interactive visualizations",
             "Real-time database updates",
             "Clustering analysis",
-            "Timeline tracking"
-        ]
+            "Timeline tracking",
+        ],
     )
+
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
-    return {"error": "Endpoint not found", "available_endpoints": [
-        "/docs", "/redoc", "/health", "/info",
-        "/analyze/", "/compare/", "/timeline/", "/visualize/", "/update/"
-    ]}
+    return {
+        "error": "Endpoint not found",
+        "available_endpoints": [
+            "/docs",
+            "/redoc",
+            "/health",
+            "/info",
+            "/analyze/",
+            "/compare/",
+            "/timeline/",
+            "/visualize/",
+            "/update/",
+        ],
+    }
+
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc: HTTPException):
     logger.error(f"Internal server error: {exc}")
     return {"error": "Internal server error", "message": "Please check the logs"}
 
+
 if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8001,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True, log_level="info")
